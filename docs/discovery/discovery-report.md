@@ -1,7 +1,7 @@
 # Stage 0 — Discovery Report
 ## Victoriya Photo Assistant
 
-**Status:** Draft — Gate 0 pending user acceptance  
+**Status:** ACCEPTED — Gate 0 accepted by product owner on 2026-11-18  
 **Date:** 2026-11-18  
 **Repository:** [designfordrink/victoriya-photo-uploader](https://github.com/designfordrink/victoriya-photo-uploader)  
 **Process:** [Standard Project Development Pipeline — Github Stage-Gated](https://app.notion.com/p/3f1937a9fdd181dbb1bae975bd77c4f7)
@@ -223,6 +223,6 @@ These questions do not prevent documenting the discovery, but must be resolved b
 | Critical unknowns are recorded | Complete |
 | Scope of the first assistant is bounded | Complete |
 
-**Gate 0 status: READY FOR USER REVIEW — NOT YET ACCEPTED.**
+**Gate 0 status: ACCEPTED by product owner on 2026-11-18.**
 
 After user acceptance, proceed to **Stage 1 — PRD**. Do not start TRD or implementation before the PRD is reviewed and accepted.
