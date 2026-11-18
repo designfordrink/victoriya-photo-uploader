@@ -23,8 +23,13 @@ class ManifestWriter:
         temporary_path: Path | None = None
         try:
             with tempfile.NamedTemporaryFile(
-                mode="w", encoding="utf-8", newline="\n", dir=destination.parent,
-                prefix=f".{job.job_id}.", suffix=".tmp", delete=False,
+                mode="w",
+                encoding="utf-8",
+                newline="\n",
+                dir=destination.parent,
+                prefix=f".{job.job_id}.",
+                suffix=".tmp",
+                delete=False,
             ) as temporary:
                 temporary.write(payload + "\n")
                 temporary.flush()
