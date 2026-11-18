@@ -1,0 +1,47 @@
+# Python
+__pycache__/
+*.py[cod]
+*.pyd
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.coverage
+htmlcov/
+
+# Environments and package builds
+.venv/
+venv/
+ENV/
+build/
+dist/
+*.egg-info/
+.wheels/
+
+# Local configuration and secrets
+.env
+.env.*
+!.env.example
+config/config.yaml
+config/config.local.yaml
+
+# Local salon data and photo jobs
+Victoriya/
+data/
+workspace/
+jobs/
+output/
+*.heic
+*.jpg
+*.jpeg
+*.png
+*.webp
+*.avif
+
+# Editors and operating systems
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
+
+# uv
+.uv/
