@@ -5,14 +5,11 @@ from __future__ import annotations
 import hashlib
 import shutil
 from pathlib import Path
-from typing import Protocol, TypeVar
+from typing import Protocol
 
 
 class HasSha256(Protocol):
     sha256: str
-
-
-T = TypeVar("T", bound=HasSha256)
 
 
 class FileCollisionError(FileExistsError):
@@ -28,7 +25,7 @@ def sha256_file(path: Path, chunk_size: int = 1024 * 1024) -> str:
     return digest.hexdigest()
 
 
-def unique_by_sha256(items: list[T]) -> list[T]:
+def unique_by_sha256[T: HasSha256](items: list[T]) -> list[T]:
     """Keep the first item for each exact SHA-256; similar images remain distinct."""
     seen: set[str] = set()
     unique: list[T] = []
@@ -54,10 +51,12 @@ def copy_file_no_overwrite(source: Path, destination: Path) -> bool:
         with source.open("rb") as input_file, destination.open("xb") as output_file:
             shutil.copyfileobj(input_file, output_file)
             output_file.flush()
-    except FileExistsError:
+    except FileExistsError as exc:
         if sha256_file(destination) == source_hash:
             return False
-        raise FileCollisionError(f"Refusing to overwrite a different file: {destination}")
+        raise FileCollisionError(
+            f"Refusing to overwrite a different file: {destination}"
+        ) from exc
     except OSError:
         destination.unlink(missing_ok=True)
         raise
