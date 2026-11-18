@@ -30,10 +30,12 @@ class MarkdownReportWriter:
         if not job.assets:
             lines.append("No assets recorded yet.")
         else:
-            lines.extend([
-                "| Asset | Source | Watermark | Output | Warnings |",
-                "|---|---|---|---|---|",
-            ])
+            lines.extend(
+                [
+                    "| Asset | Source | Watermark | Output | Warnings |",
+                    "|---|---|---|---|---|",
+                ]
+            )
             for asset in job.assets:
                 output = asset.output.relative_path if asset.output else "—"
                 warning_text = "; ".join(asset.warnings).replace("|", "\\|") or "—"
@@ -61,8 +63,13 @@ class MarkdownReportWriter:
         temporary_path: Path | None = None
         try:
             with tempfile.NamedTemporaryFile(
-                mode="w", encoding="utf-8", newline="\n", dir=destination.parent,
-                prefix=f".{job.job_id}.", suffix=".tmp", delete=False,
+                mode="w",
+                encoding="utf-8",
+                newline="\n",
+                dir=destination.parent,
+                prefix=f".{job.job_id}.",
+                suffix=".tmp",
+                delete=False,
             ) as temporary:
                 temporary.write(self.render(job))
                 temporary.flush()
