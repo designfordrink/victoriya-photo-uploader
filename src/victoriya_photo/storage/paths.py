@@ -103,12 +103,8 @@ class PathManager:
     ) -> ProductDirectories:
         """Create and return the source/work/output/report directories."""
         product_root = self.safe_path("Collections", collection, brand, model)
-        source_dir = self.safe_path(
-            "Collections", collection, brand, model, "source", job_id
-        )
-        work_dir = self.safe_path(
-            "Collections", collection, brand, model, "source", job_id, "work"
-        )
+        source_dir = self.safe_path("Collections", collection, brand, model, "source", job_id)
+        work_dir = self.safe_path("Collections", collection, brand, model, "source", job_id, "work")
         output_dir = self.safe_path("Collections", collection, brand, model, "output")
         reports_dir = self.safe_path("Collections", collection, brand, model, "reports")
 
