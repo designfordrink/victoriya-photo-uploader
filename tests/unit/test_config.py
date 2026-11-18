@@ -70,8 +70,7 @@ def test_relative_root_is_rejected(tmp_path: Path) -> None:
 def test_unknown_config_keys_are_rejected(tmp_path: Path) -> None:
     config_file = tmp_path / "config.yaml"
     config_file.write_text(
-        f'paths:\n  victoriya_root: "{tmp_path.as_posix()}"\n'
-        "unexpected: true\n",
+        f'paths:\n  victoriya_root: "{tmp_path.as_posix()}"\nunexpected: true\n',
         encoding="utf-8",
     )
 
