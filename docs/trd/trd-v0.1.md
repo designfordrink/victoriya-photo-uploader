@@ -328,6 +328,10 @@ References:
    - published price: 4 credits per successful generation; Stability AI pricing states that one credit equals $0.01 (currently about $0.04 per request).
 4. **Local alternative:** LaMa may be tested behind the same adapter for simple masked background extension when local processing is preferred. It requires a separately generated mask and is not itself a complete outpainting workflow.
 
+**FLUX Fill [dev] is not the default for commercial production.** Black Forest Labs' current FLUX [dev] license restricts use of the model to non-commercial and non-production purposes. A separate commercial license would be required before considering it for the salon's production workflow. A paid FLUX API product may be re-evaluated separately, but it is not selected in this TRD.
+
+Reference: [Black Forest Labs — FLUX [dev] Non-Commercial License](https://bfl.ai/legal/non-commercial-license-terms).
+
 **Subject preservation is mandatory.** The generated result must not replace the original image wholesale. The Photo Engine must verify the returned dimensions, then composite the untouched original image over the corresponding central area of the generated canvas. Only a narrow transition band on the background may be blended. If the model or dress touches the edge where the background must be extended, or if the source already cuts off part of the dress, mark the result `needs_review`; never invent a missing sleeve, hem, train, hand or body part.
 
 The Stability endpoint returns generated image bytes and exposes a seed header. Save the seed, prompt, expansion values and API response metadata in the job manifest. Verify final 600 × 800 dimensions after compositing and resizing.
@@ -486,6 +490,10 @@ Recommended job manifest:
       "output_height": 800,
       "output_bytes": 123456,
       "processing_method": "crop",
+      "watermark_status": "absent",
+      "watermark_probability": 0.04,
+      "watermark_mask_path": null,
+      "watermark_removal_backend": null,
       "warnings": []
     }
   ]
@@ -773,6 +781,8 @@ Every output is checked by both automated file validation and human visual revie
 **Decision:** implement background extension and watermark cleanup as two separate adapters. Use deterministic edge extension first and Stability AI Outpaint as the initial cloud candidate. For watermark cleanup, require Jev 1.14 Noul on every image; skip all removal work when absent; only after a positive check use Jev Box, a validated pixel mask and Stability AI Erase (Inpaint only when a prompt is needed). Keep LaMa as a local option.
 
 **Reason:** the current Hugging Face Space uses a manually drawn mask and SimpleLama; it does not detect whether a watermark exists. Since most product photos have no watermark, detection must precede mask creation and removal.
+
+**Commercial licensing note:** FLUX Fill [dev] is excluded from the production shortlist unless a commercial license is obtained, because its published license is non-commercial and non-production.
 
 **Status:** proposed; requires image-set benchmark and product-owner acceptance.
 
