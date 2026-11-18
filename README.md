@@ -8,7 +8,7 @@
 
 **Пример первого сценария:** [Pronovias — свадебное платье SUFI](https://www.pronovias.com/int_en/bridal-dress-a-line-sweetheart-neckline-lace-sufi).
 
-> **Текущий статус:** Discovery, PRD и TRD приняты. Подробная спецификация Stage 3 подготовлена и ожидает приёмки. Рабочая программа ещё не реализована; кодирование начнётся только после принятия Detailed Specification и Implementation Plan по регламенту Stage-Gated.
+> **Текущий статус:** Discovery, PRD и TRD приняты. Подробная спецификация Stage 3 принята. Готовится план реализации Stage 4. Рабочая программа ещё не реализована; кодирование начнётся только после принятия Detailed Specification и Implementation Plan по регламенту Stage-Gated.
 
 ---
 
@@ -210,8 +210,8 @@ Hermes не должен самостоятельно редактировать
 | Stage 0 — Discovery | Описание проблемы, пользователя, сценария и ограничений | **Принят** |
 | Stage 1 — PRD | Требования к продукту и критерии приёмки | **Принят** |
 | Stage 2 — TRD | Техническая архитектура, инструменты, модели и проверки | **Принят** |
-| Stage 3 — Detailed Specification | Подробное описание алгоритмов, интерфейсов, ошибок и проверок | Подготовлен, ожидает приёмки |
-| Stage 4 — Implementation Plan | Последовательность небольших задач разработки | Не начат |
+| Stage 3 — Detailed Specification | Подробное описание алгоритмов, интерфейсов, ошибок и проверок | **Принят** |
+| Stage 4 — Implementation Plan | Последовательность небольших задач разработки | В работе |
 | Stage 5 — Implementation | Реализация и проверка отдельных функций | Не начат |
 | Stage 6–9 | Интеграция, финальная проверка, выпуск и улучшения | Не начаты |
 
@@ -220,7 +220,7 @@ Hermes не должен самостоятельно редактировать
 - [Discovery Report — принят](docs/discovery/discovery-report.md)
 - [PRD v0.1 — принят](docs/prd/prd-v0.1.md)
 - [TRD v0.1 — принят](docs/trd/trd-v0.1.md)
-- [Detailed Specification v0.1 — черновик, Gate 3 ожидает приёмки](docs/specification/detailed-specification-v0.1.md)
+- [Detailed Specification v0.1 — принят](docs/specification/detailed-specification-v0.1.md)
 - [Исследование обработки фона и watermark](docs/research/image-processing-research.md)
 
 ---
