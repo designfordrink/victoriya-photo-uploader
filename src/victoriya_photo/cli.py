@@ -44,10 +44,7 @@ def main(argv: list[str] | None = None) -> int:
         print("Конфигурация корректна.")
         print(f"Папка данных доступна для записи: {root}")
         print(f"Коллекция по умолчанию: {config.collection}")
-        print(
-            "Размер главного фото: "
-            f"{config.photo.main_width} × {config.photo.main_height} px"
-        )
+        print(f"Размер главного фото: {config.photo.main_width} × {config.photo.main_height} px")
         print(
             "Обработка через облачные сервисы: "
             f"{'включена' if config.cloud_processing.enabled else 'выключена'}"
