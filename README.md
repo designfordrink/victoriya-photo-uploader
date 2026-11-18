@@ -222,6 +222,7 @@ Hermes не должен самостоятельно редактировать
 - [TRD v0.1 — принят](docs/trd/trd-v0.1.md)
 - [Detailed Specification v0.1 — принят](docs/specification/detailed-specification-v0.1.md)
 - [Implementation Plan v0.1 — принят](docs/implementation/implementation-plan-v0.1.md)
+- [Инструкция по установке PR-01](docs/implementation/bootstrap-pr01.md)
 - [Исследование обработки фона и watermark](docs/research/image-processing-research.md)
 
 ---

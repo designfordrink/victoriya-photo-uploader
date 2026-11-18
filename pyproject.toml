@@ -1,0 +1,45 @@
+[project]
+name = "victoriya-photo-assistant"
+version = "0.1.0"
+description = "Local assistant for preparing dress product photos for the Victoriya salon catalogue."
+readme = "README.md"
+requires-python = ">=3.12,<3.14"
+dependencies = [
+  "pydantic>=2.10,<3",
+  "PyYAML>=6,<7",
+]
+
+[project.scripts]
+victoriya-photo = "victoriya_photo.cli:main"
+
+[dependency-groups]
+dev = [
+  "mypy>=1.13,<2",
+  "pytest>=8.3,<10",
+  "ruff>=0.8,<1",
+  "types-PyYAML>=6,<7",
+]
+
+[build-system]
+requires = ["hatchling>=1.26,<2"]
+build-backend = "hatchling.build"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/victoriya_photo"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+addopts = "-ra"
+
+[tool.ruff]
+line-length = 100
+target-version = "py312"
+src = ["src", "tests"]
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "UP", "B"]
+
+[tool.mypy]
+python_version = "3.12"
+strict = true
+mypy_path = "src"

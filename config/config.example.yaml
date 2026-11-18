@@ -1,0 +1,21 @@
+# Copy this file to config/config.yaml and set your local folder.
+# Do not add API keys or passwords here.
+
+paths:
+  victoriya_root: 'D:/Victoriya'
+
+collection: wedding
+
+photo:
+  main_width: 600
+  main_height: 800
+  secondary_max_bytes: 2500000
+  secondary_format: jpg
+
+models:
+  hermes: deepseek/deepseek-v4.1-flash-1017
+  visual_decisions: typesafe/jev-1.14
+  escalation: google/gemini-3-flash-preview
+
+cloud_processing:
+  enabled: false
