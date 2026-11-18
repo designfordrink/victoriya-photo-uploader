@@ -8,7 +8,7 @@
 
 **Пример первого сценария:** [Pronovias — свадебное платье SUFI](https://www.pronovias.com/int_en/bridal-dress-a-line-sweetheart-neckline-lace-sufi).
 
-> **Текущий статус:** Discovery, PRD и TRD приняты. Подробная спецификация Stage 3 принята. Готовится план реализации Stage 4. Рабочая программа ещё не реализована; кодирование начнётся только после принятия Detailed Specification и Implementation Plan по регламенту Stage-Gated.
+> **Текущий статус:** Discovery, PRD и TRD приняты. Подробная спецификация Stage 3 принята. План реализации Stage 4 принят. Начата первая задача Stage 5 — создание основы Python-проекта. Рабочая программа ещё не реализована; кодирование начнётся только после принятия Detailed Specification и Implementation Plan по регламенту Stage-Gated.
 
 ---
 
@@ -211,8 +211,8 @@ Hermes не должен самостоятельно редактировать
 | Stage 1 — PRD | Требования к продукту и критерии приёмки | **Принят** |
 | Stage 2 — TRD | Техническая архитектура, инструменты, модели и проверки | **Принят** |
 | Stage 3 — Detailed Specification | Подробное описание алгоритмов, интерфейсов, ошибок и проверок | **Принят** |
-| Stage 4 — Implementation Plan | Последовательность небольших задач разработки | В работе |
-| Stage 5 — Implementation | Реализация и проверка отдельных функций | Не начат |
+| Stage 4 — Implementation Plan | Последовательность небольших задач разработки | **Принят** |
+| Stage 5 — Implementation | Реализация и проверка отдельных функций | В работе: PR-01 (bootstrap) |
 | Stage 6–9 | Интеграция, финальная проверка, выпуск и улучшения | Не начаты |
 
 ### Основные документы
@@ -221,6 +221,7 @@ Hermes не должен самостоятельно редактировать
 - [PRD v0.1 — принят](docs/prd/prd-v0.1.md)
 - [TRD v0.1 — принят](docs/trd/trd-v0.1.md)
 - [Detailed Specification v0.1 — принят](docs/specification/detailed-specification-v0.1.md)
+- [Implementation Plan v0.1 — принят](docs/implementation/implementation-plan-v0.1.md)
 - [Исследование обработки фона и watermark](docs/research/image-processing-research.md)
 
 ---
