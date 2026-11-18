@@ -20,7 +20,7 @@ Use a **hybrid local architecture**:
 3. A local **MCP server** exposes narrowly defined photo-job tools to Hermes. It runs as a local process over standard input/output, not as an internet-facing web service.
 4. **Playwright + Chromium** collect product-gallery images from public manufacturer pages in a controlled, testable browser session.
 5. **Pillow** performs deterministic image work and validates dimensions and file sizes.
-6. Optional AI image services are isolated behind adapters for visual ranking, watermark masks and background extension. They are not hard-wired into the core pipeline.
+6. Optional AI image services are isolated behind adapters: Jev 1.14 checks watermark presence on every image; Stability AI Outpaint expands a background when required; Stability AI Erase/Inpaint runs only after a positive watermark check and mask creation. They are not hard-wired into the core pipeline.
 
 This keeps Hermes replaceable: if another agent interface is preferred later, it can call the same local photo engine through MCP or its command interface.
 
@@ -316,53 +316,115 @@ References:
 
 #### Background extension
 
-Implement an adapter interface rather than committing the whole product to one inpainting model.
+**Recommendation:** use a tiered approach. Do not send every image to a generative model.
 
-Proposed process:
+1. **Geometry first:** calculate the target 3:4 composition without stretching the model or dress. Use Crop only when Jev/vision checks and deterministic geometry indicate that the full model and garment remain inside the crop.
+2. **Simple background:** if the side background is a nearly uniform studio wall, use a deterministic Pillow/OpenCV edge-color or gradient extension. This is fast, local and avoids unnecessary image-generation calls.
+3. **Complex background:** use the Stability AI Outpaint API as the first cloud candidate:
+   - endpoint: `POST https://api.stability.ai/v2beta/stable-image/edit/outpaint`;
+   - pass the original image plus exact `left` and/or `right` pixel expansion values;
+   - provide a restrained prompt to continue the existing background and not introduce people, clothing or new objects;
+   - the API supports JPEG, PNG and WebP, directions from 0 to 2000 pixels, and source images up to 9,437,184 pixels;
+   - published price: 4 credits per successful generation; Stability AI pricing states that one credit equals $0.01 (currently about $0.04 per request).
+4. **Local alternative:** LaMa may be tested behind the same adapter for simple masked background extension when local processing is preferred. It requires a separately generated mask and is not itself a complete outpainting workflow.
 
-1. Create a 3:4 canvas at the target composition.
-2. Place the untouched source image without distortion.
-3. Define masks only in newly added background areas.
-4. Protect the model and dress using a foreground mask.
-5. Generate the side background using the selected local or cloud inpainting/outpainting backend.
-6. Composite the original model/dress pixels back over the generated background where applicable.
-7. Inspect the result and validate that the source subject has not been changed.
-8. Save the final 600 × 800 JPG.
+**Subject preservation is mandatory.** The generated result must not replace the original image wholesale. The Photo Engine must verify the returned dimensions, then composite the untouched original image over the corresponding central area of the generated canvas. Only a narrow transition band on the background may be blended. If the model or dress touches the edge where the background must be extended, or if the source already cuts off part of the dress, mark the result `needs_review`; never invent a missing sleeve, hem, train, hand or body part.
 
-The mask should never overlap the dress or model intentionally. If the model cannot produce a reliable subject mask, do not run generative extension automatically; use the safest non-generative alternative and report that manual review is required.
+The Stability endpoint returns generated image bytes and exposes a seed header. Save the seed, prompt, expansion values and API response metadata in the job manifest. Verify final 600 × 800 dimensions after compositing and resizing.
 
-**Candidate for subject masking:** Meta SAM 2. Its official repository describes image and video segmentation and lists Apache 2.0 licensing for its code and model checkpoints. It is a candidate, not yet a locked dependency.
-
-Reference: [Meta SAM 2 repository](https://github.com/facebookresearch/sam2).
-
-#### Watermark cleanup
-
-The salon's existing Hugging Face tool is useful as a prototype reference, but not as a complete automatic solution.
-
-Observed implementation:
-- The Space uses Gradio's image editor with a manually drawn mask.
-- Its processing function passes the image and mask to `SimpleLama`.
-- Its current requirements include Gradio, PyTorch and OpenCV.
-
-That means it demonstrates the inpainting step, but it does not automatically locate watermarks or create masks. It should not be treated as a ready-made end-to-end agent tool.
+Cloud processing must remain configurable and disabled until the salon explicitly enables it, because the original product photo is transmitted to an external provider. Confirm applicable provider terms before production use.
 
 References:
-- [Existing Inpaint-Objectremover Space](https://huggingface.co/spaces/bacancydataprophets/Inpaint-Objectremover)
-- [Space app.py](https://huggingface.co/spaces/bacancydataprophets/Inpaint-Objectremover/blob/main/app.py)
-- [OpenCV LaMa model card](https://huggingface.co/opencv/inpainting_lama)
+- [Stability AI — Outpaint API](https://docs.stability.ai/api-reference/edit/outpaint)
+- [Stability AI — Pricing](https://docs.stability.ai/pricing)
+- [LaMa repository](https://github.com/advimman/lama)
 
-**Recommended design**
+### 3.8 Watermark detection and cleanup
 
-- Separate watermark detection/mask creation from inpainting.
-- Use a visual model or a dedicated detector to identify likely watermark regions.
-- Expand masks carefully around the detected mark.
-- Run LaMa or another selected inpainting backend only on authorized images and appropriate masks.
-- Compare the edited output with the source.
-- If a watermark crosses the dress, face or important product details and a faithful repair cannot be assured, preserve the best permitted source and flag it instead of inventing garment detail.
+**Core product rule: Jev 1.14 checks every downloaded product photo for a watermark. Most photos are expected to have no watermark. Absence is a normal successful result. No removal operation is run when the watermark is absent.**
 
-Do not assume that a model that removes a small object cleanly can remove a large translucent watermark across lace or fabric without damaging the product.
+This is a separate pipeline from background extension.
 
-### 3.7 Secondary photo processing
+#### Detection — Jev first, before any erasing
+
+For each downloaded image, call OpenRouter Decisions API with `typesafe/jev-1.14` and a `noul` question:
+
+> Does this image contain a watermark — text, logo or repeated translucent mark deliberately overlaid on top of the photograph?
+
+The criteria must explicitly exclude:
+- embroidery, lace, print, appliqué, labels, garment logos and other details that are part of the dress;
+- real signs, text or logos that are part of the photographed background;
+- UI elements or unrelated image content.
+
+Use a single image-presence question first. Do **not** request a Box in this first pass: Jev Box always returns a rectangle even when the target is absent, so a false box could trigger destructive editing.
+
+Jev's Noul output is a probability, not a separate confidence field. Values near 0.5 indicate uncertainty. Thresholds must be calibrated on a labelled sample of the salon's own photos.
+
+**Initial pilot routing (provisional, not final thresholds):**
+
+| Noul result | Status | Action |
+|---|---|---|
+| `p <= 0.10` | `absent` | Skip Box, OCR, segmentation, Erase and Inpaint. Preserve the image as-is. |
+| `p >= 0.90` | `present` | Continue to watermark localization and mask creation. |
+| `0.10 < p < 0.90` | `uncertain` | Re-check with Jev on a relevant crop or second phrasing. If still uncertain, do not erase; report `needs_review`. |
+
+These initial boundaries deliberately favor avoiding false positives. Tune them against a labelled pilot set containing many no-watermark photos as well as text, logo and translucent watermark examples. A wrong positive could erase a real garment detail.
+
+#### Localization and mask creation
+
+Only after a positive Jev Noul result:
+
+1. Call Jev 1.14 Box to locate the complete overlaid watermark. Its normalized coordinates must be converted to source-image pixels.
+2. Treat the Box as a coarse region of interest, **not** as the final mask. Never erase the entire rectangle.
+3. For text-based watermark, run a local text detector such as PaddleOCR/PP-OCR to obtain text polygons within the Jev region. Intersect those polygons with the confirmed watermark region and exclude text that is part of the scene or product.
+4. For graphic/logo watermark, test SAM 2 with the Jev bounding box as a prompt to obtain a pixel-level mask. SAM 2 is a general image segmentation model, not a watermark-specific detector; only use the result if the mask quality checks pass.
+5. If there are multiple watermark marks, repeat detection on overlapping image tiles or separate confirmed regions. A single Jev Box must not be assumed to cover all marks.
+6. Dilate the accepted mask by a small, resolution-scaled margin and feather only the boundary. Save the raw mask, refined mask and a mask-preview image in the job workspace.
+7. Reject masks that cover large unrelated areas, the face, or important product details without a sufficiently reliable reconstruction path.
+
+References:
+- [OpenRouter — Jev Noul and Box](https://openrouter.ai/blog/insights/what-is-jev/)
+- [OpenRouter — Multimodal Decisions](https://openrouter.ai/docs/guides/community/multimodal-decisions)
+- [PaddleOCR — Text Detection](https://www.paddleocr.ai/main/en/version3.x/module_usage/text_detection.html)
+- [SAM 2](https://github.com/facebookresearch/sam2)
+
+#### Removal backend
+
+**First cloud candidate: Stability AI Erase**
+- endpoint: `POST https://api.stability.ai/v2beta/stable-image/edit/erase`;
+- accepts the source image and an optional black/white mask;
+- black means preserve; white means maximum erase/inpainting strength;
+- documented output is 4 megapixels;
+- published price: 5 credits per successful generation (currently about $0.05).
+
+Use Erase for a localized watermark where the mask is compact and surrounding pixels provide sufficient context.
+
+**Alternative: Stability AI Inpaint**
+- endpoint: `POST https://api.stability.ai/v2beta/stable-image/edit/inpaint`;
+- requires an image and prompt, and accepts an explicit mask;
+- use only when a clear reconstruction description is helpful, such as continuing a plain studio background;
+- published price is also 5 credits per successful generation (currently about $0.05).
+
+**Local alternative:** LaMa/SimpleLama can be tested for localized repairs where the photo should remain on the computer. It still requires a correct mask and may struggle with complex lace, embroidery or large translucent overlays. The existing Hugging Face Space is a manual-mask Gradio demo; it is a prototype reference, not a production dependency for autonomous processing.
+
+#### Preserve all pixels outside the accepted mask
+
+The API result must not replace the entire source image. Because Erase/Inpaint can return a 4MP image and alter pixels beyond the watermark area:
+
+1. Keep the original source file immutable.
+2. Resize/align the API result to the working image dimensions.
+3. Composite generated pixels only within the accepted watermark mask and a small feathered edge.
+4. Restore exact original pixels everywhere outside the mask.
+5. Save source, mask, generated result and composited result separately.
+6. Record the model, API endpoint, seed, mask path, source hash, output hash and validation result.
+
+If the watermark crosses intricate lace, transparent fabric, embroidery, a face or another product-defining detail, the service may invent a plausible but incorrect pattern. In that case keep the source, mark `needs_review`, and never claim that the hidden pixels were recovered exactly.
+
+#### Cost and no-watermark branch
+
+If Jev identifies no watermark, cleanup cost for that photo is **zero**: no OCR, Box, Erase or Inpaint request is made. Only confirmed positives incur removal cost. Current Stability price references are [Erase](https://docs.stability.ai/api-reference/edit/erase), [Inpaint](https://docs.stability.ai/api-reference/edit/inpaint) and [Pricing](https://docs.stability.ai/pricing).
+
+### 3.9 Secondary photo processing
 
 Proposed default: convert all secondary photos to JPEG for consistency with the current website workflow.
 
@@ -378,7 +440,7 @@ Processing steps:
 
 This default remains a product decision to confirm: the user has not explicitly said that every secondary image must be JPEG.
 
-### 3.8 Storage and job files
+### 3.10 Storage and job files
 
 The configured base directory is the local `Victoriya` directory. It must be set explicitly; never assume a drive letter.
 
@@ -432,7 +494,7 @@ Recommended job manifest:
 
 The manifest is the machine-readable record of what happened. A readable Markdown or text report is generated from it.
 
-### 3.9 Configuration
+### 3.11 Configuration
 
 Use one local configuration file, excluded from Git, containing:
 
@@ -458,7 +520,7 @@ Secrets, API keys, cookies and login credentials must never be committed to the 
 | Structured visual decisions | Jev 1.14 via Decisions API | Chat model with vision | Very low input-token price and typed answers; use only after dress-photo accuracy tests. |
 | Product page extraction | Playwright Python + managed Chromium | Hermes browser tool alone | Dedicated extractor is easier to test and maintain than free-form browser actions. |
 | Image processing | Python + Pillow | Photoshop scripting / ImageMagick | Reproducible pixel-level output and easy validation. |
-| Subject masking | SAM 2 candidate + fallback strategy | Other segmentation model | A subject mask helps protect the model and dress during side-background extension. |
+| Subject/watermark segmentation | SAM 2 candidate, prompted by Jev Box | Other segmentation model | Optional pixel-mask refinement; use only after validation on translucent logos and dress details. |
 | Local inpainting | LaMa/SimpleLama candidate | SDXL inpainting or another model | LaMa is close to the current prototype; exact quality and hardware suitability require tests. |
 | Cloud image processing | Optional adapter only | Local models | Can reduce local hardware requirements, but sends brand images to an external provider and may incur costs. |
 
@@ -624,7 +686,7 @@ No strict runtime target is added to the PRD. The pilot should establish a reali
 - Prefer CPU-compatible deterministic operations for routine conversion and compression.
 - Generative inpainting/outpainting can require materially more memory and time than ordinary resizing. Whether it runs locally or through an external service depends on the user's hardware and privacy decision.
 
-**Hardware decision still open:** GPU model and video memory have not been provided. The recommended main conversational model and Jev visual judgments run through OpenRouter, so they do not require a local GPU. A local generative model for inpainting/outpainting would still depend on local hardware; alternatively, a cloud image-editing backend can be evaluated with explicit image-transfer and cost controls.
+**Hardware decision still open:** GPU model and video memory have not been provided. The recommended main conversational model and Jev visual judgments run through OpenRouter, so they do not require a local GPU. The first image-editing candidate is the Stability AI API, so it also does not require a local GPU but sends images to an external provider. Local LaMa/SAM2 inference remains optional and requires a separate CPU/GPU benchmark.
 
 ## 11. Testing strategy
 
@@ -706,13 +768,13 @@ Every output is checked by both automated file validation and human visual revie
 
 **Status:** proposed.
 
-### ADR-006 — Inpainting models behind adapters
+### ADR-006 — Separate outpainting and watermark-removal pipelines
 
-**Decision:** do not make the project dependent on one public Hugging Face Space or one specific model. Provide separate interfaces for watermark cleanup and background extension.
+**Decision:** implement background extension and watermark cleanup as two separate adapters. Use deterministic edge extension first and Stability AI Outpaint as the initial cloud candidate. For watermark cleanup, require Jev 1.14 Noul on every image; skip all removal work when absent; only after a positive check use Jev Box, a validated pixel mask and Stability AI Erase (Inpaint only when a prompt is needed). Keep LaMa as a local option.
 
-**Reason:** the current Space uses a manually drawn mask and SimpleLama, which is not enough for a fully autonomous workflow. Hardware, image quality and external-data policy have not yet been resolved.
+**Reason:** the current Hugging Face Space uses a manually drawn mask and SimpleLama; it does not detect whether a watermark exists. Since most product photos have no watermark, detection must precede mask creation and removal.
 
-**Status:** proposed.
+**Status:** proposed; requires image-set benchmark and product-owner acceptance.
 
 ## 13. Open technical decisions
 
@@ -730,6 +792,9 @@ Every output is checked by both automated file validation and human visual revie
 | TD-10 | Primary OpenRouter model | Proposed: `deepseek/deepseek-v4.1-flash-1017`; benchmark tool-call reliability and cost on the actual Hermes skill. |
 | TD-11 | Jev visual decision model | Proposed: `typesafe/jev-1.14` through Decisions API; validate Choice/Noul/Box accuracy and confidence thresholds on labeled dress photos. |
 | TD-12 | Escalation vision model | Proposed: `google/gemini-3-flash-preview`, called only on ambiguous or low-confidence cases. |
+| TD-13 | Watermark presence thresholds for Jev Noul | Start with `p <= 0.10` absent, `p >= 0.90` present, middle uncertain; calibrate on labelled salon images before release. |
+| TD-14 | Outpainting provider | Proposed: Stability AI Outpaint API; validate quality, output alignment, current commercial terms and cloud-image policy. |
+| TD-15 | Watermark erase provider | Proposed: Stability AI Erase after Jev detection and mask validation; benchmark against local LaMa on watermarks over studio background and dress fabric. |
 
 ## 14. Requirements traceability
 
@@ -737,8 +802,8 @@ Every output is checked by both automated file validation and human visual revie
 |---|---|---|
 | FR-01–FR-05: URL and gallery retrieval | MCP + Playwright Collector | URL/page/gallery integration tests |
 | FR-06–FR-07: lead-photo selection | Contact sheet + Jev 1.14 Decisions adapter; optional DeepSeek/Gemini escalation | Candidate-ranking test set and human review |
-| FR-08–FR-10: main-image preparation | Pillow + crop/extension adapters | Exact dimension test + visual review |
-| FR-11–FR-13: secondary images and watermark cleanup | Pillow + cleanup adapter | Byte-size tests + visual review |
+| FR-08–FR-10: main-image preparation | Pillow + deterministic crop/extension; Stability Outpaint adapter for complex backgrounds | Exact dimension test + source-pixel preservation check + visual review |
+| FR-11–FR-13: secondary images and watermark cleanup | Jev Noul presence check → conditional mask pipeline → Erase/Inpaint adapter; Pillow compression | False-positive/negative watermark test set + byte-size tests + visual review |
 | FR-14–FR-15: file storage and source preservation | Storage manager + manifest | Path, hash and overwrite tests |
 | FR-16: completion report | Job reporter | Report/schema tests |
 | FR-17: partial failures | Job state machine | Fault-injection integration tests |
