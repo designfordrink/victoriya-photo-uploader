@@ -62,7 +62,7 @@ Original image files                  +--> visual validation
              Completion report in Hermes
 ```
 
-The AI agent may use its configured vision-capable model to rank the contact sheet and choose the lead image. The image engine handles the measurable transformations and file checks.
+The AI model routing is split by task: DeepSeek V4.1 Flash 1017 is the proposed primary Hermes chat/tool model; Jev 1.14 is called directly by the photo engine through OpenRouter's Decisions API for typed image judgments; Gemini 3 Flash Preview is an optional escalation model for ambiguous visual or agent tasks. The image engine handles measurable transformations and file checks.
 
 ## 3. Component design
 
@@ -71,6 +71,7 @@ The AI agent may use its configured vision-capable model to rank the contact she
 **Responsibility**
 
 - Receive the product URL from the user.
+- Use the configured primary OpenRouter chat model for conversation, planning, tool selection and exception handling.
 - Follow the reusable `Victoriya Photo Assistant` skill.
 - Call the local photo-job tools in the required order.
 - Review the contact sheet returned by the collector and rank candidates against the PRD criteria.
@@ -166,7 +167,7 @@ Reference: [Playwright — Downloads](https://playwright.dev/python/docs/downloa
 
 ### 3.5 Lead photo ranking
 
-The candidate images are presented to Hermes as a contact sheet with stable asset IDs. The configured vision-capable model ranks them against the PRD criteria:
+The candidate images are presented to the visual-decision adapter with stable asset IDs. Jev 1.14 evaluates structured visual questions against the PRD criteria:
 
 1. Front-facing model.
 2. Full-length view.
@@ -180,7 +181,112 @@ The first gallery image gets preference only when it meets the criteria. Otherwi
 
 A confidence field should be recorded for the selection. The workflow still chooses the best available image at low confidence, but the final report must flag that selection.
 
-### 3.6 Image processing engine
+**Jev-specific implementation notes:**
+- OpenRouter model ID: `typesafe/jev-1.14` (or the versioned latest alias only after it has been revalidated).
+- Jev is a typed decision model, not a conversational LLM: it returns decisions/probabilities rather than explanations or free-form text.
+- Its primitives include Choice (select a candidate), Noul (test a yes/no condition), Score (rate on an ordered scale) and Box (locate a region in an image).
+- Image input and Box are documented for Jev 1.14. Box always returns coordinates and has no native “not found” result; pair it with a Noul presence check when locating an object such as a watermark.
+- OpenRouter/TypeSafe currently documents image requests as using a slower, less accurate long-context mode. Therefore Jev must be evaluated on the actual dress-photo test set and must not be treated as an infallible gate.
+- Use Jev's typed result and confidence to select or flag; use a chat model only when a human-readable explanation or escalation is needed.
+
+References: [Jev documentation](https://openrouter.ai/docs/guides/community/jev), [Multimodal Decisions](https://openrouter.ai/docs/guides/community/multimodal-decisions).
+
+### 3.6 Model routing and task allocation
+
+The project should use separate models for conversational orchestration and small, structured judgments. A single model should not be called for every subtask.
+
+### Proposed model roles
+
+| Role | Model | OpenRouter model ID | Responsibility |
+|---|---|---|---|
+| Main Hermes model | DeepSeek V4.1 Flash 1017 | `deepseek/deepseek-v4.1-flash-1017` | User conversation, multi-step planning, browser/photo-engine tool calls, exception handling and final report |
+| Visual decision model | Jev 1.14 | `typesafe/jev-1.14` | Structured image decisions: choose between candidate photos, test frontal/full-length criteria, score suitability and locate a target region |
+| Escalation / second opinion | Gemini 3 Flash Preview | `google/gemini-3-flash-preview` | Ambiguous visual ranking, difficult page interpretation or cases where the primary model/Jev confidence is insufficient |
+
+### Why DeepSeek V4.1 Flash 1017 for the main agent
+
+The OpenRouter model page currently lists:
+- input price: $0.036 per million tokens;
+- output price: $0.50 per million tokens;
+- context length: 1,048,576 tokens;
+- text and image input;
+- tool calling and structured-output support.
+
+OpenRouter also lists Hermes Agent among its high-usage applications for this model. This makes it a strong low-cost starting candidate for the main Hermes loop, but not an unconditional quality guarantee. Verify the current provider route and tool-call reliability with this project's actual workflows.
+
+Source: [DeepSeek V4.1 Flash 1017 on OpenRouter](https://openrouter.ai/deepseek/deepseek-v4.1-flash-1017).
+
+### Why Jev 1.14 for visual decisions
+
+Jev 1.14 accepts image input through the OpenRouter Decisions API and returns typed judgments rather than free-form prose. This fits narrowly defined questions such as:
+
+- Which of these candidate images is the best lead photo?
+- Is the model facing the camera?
+- Is the model visible full-length?
+- Is the dress hem/train cut off?
+- Where is a suspected watermark located?
+
+The relevant decision primitives are:
+- `Choice`: select one candidate from a set;
+- `Noul`: estimate whether a condition is true;
+- `Score`: score a candidate on an ordered scale;
+- `Box`: return normalized coordinates of a target region.
+
+Use `typesafe/jev-1.14`, not Jev 1.13, for image-based Box questions. Box returns a bounding rectangle and does not itself return a pixel-level mask. It also has no native “target absent” answer, so a Noul presence check is required before using its coordinates.
+
+Important limitation: the current TypeSafe documentation says every request containing an image uses its long-context mode, which is slower and less accurate than the default short-text mode. Treat Jev as a very cheap structured judge to benchmark, not as a guaranteed superior vision model. The PRD pilot must establish actual accuracy and confidence thresholds for wedding-dress images.
+
+Sources:
+- [Jev Documentation](https://openrouter.ai/docs/guides/community/jev)
+- [Multimodal Decisions](https://openrouter.ai/docs/guides/community/multimodal-decisions)
+- [TypeSafe models and current Jev pricing](https://openrouter.ai/typesafe)
+
+**Terminology note:** OpenRouter documents Jev 1.14's image-input capability and multimodal Decisions interface; it does not list a separate official model ID named `Jev Vision` in the TypeSafe model family. In this TRD, “Jev Vision” means using Jev 1.14 for image-based decisions. If the project later uses a separate custom JEV Vision endpoint, it should be added as a distinct adapter and benchmarked separately.
+
+### Why Gemini 3 Flash as an escalation option
+
+Gemini 3 Flash Preview accepts image input, tool calls and structured outputs, with a 1M-token context. Its listed standard price is $0.50/M input and $3/M output tokens. This is materially more expensive than the proposed DeepSeek primary model and Jev's input-token price, so it should be called only when a case is ambiguous or an independent second opinion is useful.
+
+Source: [Gemini 3 Flash Preview on OpenRouter](https://openrouter.ai/google/gemini-3-flash-preview).
+
+### Proposed routing policy
+
+1. Deterministic code handles file formats, dimensions, compression, hashing and path safety. Do not spend model tokens on facts that can be measured by code.
+2. Hermes uses DeepSeek V4.1 Flash 1017 for the main conversation and tool orchestration.
+3. Jev 1.14 handles structured photo judgments and suspected-region localization.
+4. If Jev confidence is low, candidate rankings disagree, or the image is unusually difficult, send only that case to Gemini 3 Flash as an escalation.
+5. Keep the reason for every escalation in the job report.
+6. Do not let a visual model authorize a destructive edit by itself. The image pipeline must protect source pixels and validate output; the user reviews final images.
+
+### Hermes configuration direction (illustrative)
+
+The main model and its provider are configured in Hermes `config.yaml`. A separate auxiliary vision chat model can also be configured there, but Jev must **not** simply be configured as Hermes' ordinary auxiliary chat-vision model: Jev uses the Decisions API and returns typed judgments, not chat completions.
+
+The exact initial Hermes configuration should be generated and tested during the implementation stage, not copied blindly from this illustrative block.
+
+```yaml
+model:
+  provider: openrouter
+  model: deepseek/deepseek-v4.1-flash-1017
+
+# Jev 1.14 is called by the Photo Engine's
+# OpenRouter Decisions API adapter, not as a chat model.
+```
+
+### OpenRouter cost and privacy controls
+
+- Store the OpenRouter API key outside Git, preferably in Hermes' credential store or its local environment file.
+- Set a monthly or project-level spending limit and inspect actual per-job usage.
+- Where supported, use OpenRouter provider routing with `data_collection: "deny"`; confirm the selected upstream provider meets the salon's image-handling requirements.
+- Disclose when photos are sent to external model providers. Public product photos may still be commercially licensed assets.
+- Keep all image transfers to the minimum needed: use resized contact sheets for visual ranking and send full-resolution images only to image-processing backends that need them.
+
+References:
+- [Hermes OpenRouter provider setup](https://hermes-agent.nousresearch.com/docs/integrations/providers)
+- [Hermes auxiliary model configuration](https://hermes-agent.nousresearch.com/docs/user-guide/configuration)
+- [Hermes OpenRouter provider routing](https://hermes-agent.nousresearch.com/docs/user-guide/features/provider-routing).
+
+## 3.7 Image processing engine
 
 #### Deterministic operations
 
@@ -344,6 +450,8 @@ Secrets, API keys, cookies and login credentials must never be committed to the 
 |---|---|---|---|
 | User-facing agent | Hermes Desktop | Other agent UI or a custom app | The desired interaction is conversational; Hermes supports desktop sessions, skills and MCP. |
 | Agent integration | Local MCP server over stdio | Direct shell/CLI calls | Typed, narrow tool contracts reduce free-form shell access and make the engine reusable. |
+| Main agent model | DeepSeek V4.1 Flash 1017 via OpenRouter | Gemini 3 Flash Preview | Strong cost/context/tool support as the initial candidate; validate on the project workflow. |
+| Structured visual decisions | Jev 1.14 via Decisions API | Chat model with vision | Very low input-token price and typed answers; use only after dress-photo accuracy tests. |
 | Product page extraction | Playwright Python + managed Chromium | Hermes browser tool alone | Dedicated extractor is easier to test and maintain than free-form browser actions. |
 | Image processing | Python + Pillow | Photoshop scripting / ImageMagick | Reproducible pixel-level output and easy validation. |
 | Subject masking | SAM 2 candidate + fallback strategy | Other segmentation model | A subject mask helps protect the model and dress during side-background extension. |
@@ -512,7 +620,7 @@ No strict runtime target is added to the PRD. The pilot should establish a reali
 - Prefer CPU-compatible deterministic operations for routine conversion and compression.
 - Generative inpainting/outpainting can require materially more memory and time than ordinary resizing. Whether it runs locally or through an external service depends on the user's hardware and privacy decision.
 
-**Hardware decision still open:** GPU model and video memory have not been provided. Do not commit to a specific local generative model or assume a cloud provider before this is known.
+**Hardware decision still open:** GPU model and video memory have not been provided. The recommended main conversational model and Jev visual judgments run through OpenRouter, so they do not require a local GPU. A local generative model for inpainting/outpainting would still depend on local hardware; alternatively, a cloud image-editing backend can be evaluated with explicit image-transfer and cost controls.
 
 ## 11. Testing strategy
 
@@ -615,13 +723,16 @@ Every output is checked by both automated file validation and human visual revie
 | TD-07 | Absolute local `Victoriya` root path | Configure once during installation. |
 | TD-08 | File naming and repeat-job layout | Use unique names/job IDs; confirm preferred final pattern. |
 | TD-09 | Maximum number/size of gallery assets | Establish safe initial limits during implementation and record them. |
+| TD-10 | Primary OpenRouter model | Proposed: `deepseek/deepseek-v4.1-flash-1017`; benchmark tool-call reliability and cost on the actual Hermes skill. |
+| TD-11 | Jev visual decision model | Proposed: `typesafe/jev-1.14` through Decisions API; validate Choice/Noul/Box accuracy and confidence thresholds on labeled dress photos. |
+| TD-12 | Escalation vision model | Proposed: `google/gemini-3-flash-preview`, called only on ambiguous or low-confidence cases. |
 
 ## 14. Requirements traceability
 
 | PRD requirement | Technical component | Verification |
 |---|---|---|
 | FR-01–FR-05: URL and gallery retrieval | MCP + Playwright Collector | URL/page/gallery integration tests |
-| FR-06–FR-07: lead-photo selection | Contact sheet + Hermes vision model | Candidate-ranking test set and human review |
+| FR-06–FR-07: lead-photo selection | Contact sheet + Jev 1.14 Decisions adapter; optional DeepSeek/Gemini escalation | Candidate-ranking test set and human review |
 | FR-08–FR-10: main-image preparation | Pillow + crop/extension adapters | Exact dimension test + visual review |
 | FR-11–FR-13: secondary images and watermark cleanup | Pillow + cleanup adapter | Byte-size tests + visual review |
 | FR-14–FR-15: file storage and source preservation | Storage manager + manifest | Path, hash and overwrite tests |
