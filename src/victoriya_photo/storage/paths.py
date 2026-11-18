@@ -2,11 +2,11 @@
 
 from __future__ import annotations
 
+import re
 import tempfile
 from dataclasses import dataclass
 from pathlib import Path, PureWindowsPath
 from typing import Final
-import re
 
 
 class UnsafePathError(ValueError):
