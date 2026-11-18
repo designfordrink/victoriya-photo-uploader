@@ -4,8 +4,13 @@ import pytest
 from pydantic import ValidationError
 
 from victoriya_photo.domain.models import (
-    Asset, AssetSource, JobStatus, PhotoJob, ProductIdentity,
-    WatermarkBox, WatermarkStatus,
+    Asset,
+    AssetSource,
+    JobStatus,
+    PhotoJob,
+    ProductIdentity,
+    WatermarkBox,
+    WatermarkStatus,
 )
 
 
@@ -27,14 +32,22 @@ def test_job_defaults_and_json_round_trip() -> None:
 
 def test_asset_source_requires_valid_hash_and_dimensions() -> None:
     source = AssetSource(
-        relative_path="source/original.webp", sha256="a" * 64,
-        format="WEBP", width=1800, height=2400, bytes=12345,
+        relative_path="source/original.webp",
+        sha256="a" * 64,
+        format="WEBP",
+        width=1800,
+        height=2400,
+        bytes=12345,
     )
     assert source.width == 1800
     with pytest.raises(ValidationError):
         AssetSource(
-            relative_path="source/original.webp", sha256="not-a-hash",
-            format="WEBP", width=0, height=2400, bytes=12345,
+            relative_path="source/original.webp",
+            sha256="not-a-hash",
+            format="WEBP",
+            width=0,
+            height=2400,
+            bytes=12345,
         )
 
 
@@ -45,10 +58,15 @@ def test_watermark_box_rejects_invalid_geometry() -> None:
 
 def test_watermark_uncertain_is_safe_default() -> None:
     asset = Asset(
-        asset_id="asset-001", gallery_order=1,
+        asset_id="asset-001",
+        gallery_order=1,
         source=AssetSource(
-            relative_path="source/a.jpg", sha256="b" * 64,
-            format="JPEG", width=600, height=800, bytes=1000,
+            relative_path="source/a.jpg",
+            sha256="b" * 64,
+            format="JPEG",
+            width=600,
+            height=800,
+            bytes=1000,
         ),
     )
     assert asset.watermark.status is WatermarkStatus.UNCERTAIN
