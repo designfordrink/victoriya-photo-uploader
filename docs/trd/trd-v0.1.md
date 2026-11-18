@@ -269,6 +269,10 @@ model:
   provider: openrouter
   model: deepseek/deepseek-v4.1-flash-1017
 
+provider_routing:
+  sort: price
+  data_collection: deny
+
 # Jev 1.14 is called by the Photo Engine's
 # OpenRouter Decisions API adapter, not as a chat model.
 ```
