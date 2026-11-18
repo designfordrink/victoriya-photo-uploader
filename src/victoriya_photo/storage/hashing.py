@@ -54,9 +54,7 @@ def copy_file_no_overwrite(source: Path, destination: Path) -> bool:
     except FileExistsError as exc:
         if sha256_file(destination) == source_hash:
             return False
-        raise FileCollisionError(
-            f"Refusing to overwrite a different file: {destination}"
-        ) from exc
+        raise FileCollisionError(f"Refusing to overwrite a different file: {destination}") from exc
     except OSError:
         destination.unlink(missing_ok=True)
         raise
