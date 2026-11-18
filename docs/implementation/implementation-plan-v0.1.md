@@ -1,7 +1,7 @@
 # Stage 4 — Implementation Plan
 ## Victoriya Photo Assistant — MVP 1
 
-**Статус:** Draft — Gate 4 ожидает приёмки владельца продукта  
+**Статус:** ACCEPTED — Gate 4 принят владельцем продукта 18 ноября 2026  
 **Версия:** 0.1  
 **Дата:** 18 ноября 2026  
 **Discovery:** [Stage 0 — Discovery Report](../discovery/discovery-report.md) — ACCEPTED  
@@ -509,17 +509,15 @@ PR-06 и PR-07 могут идти параллельно после приня�
 
 | Критерий | Статус |
 |---|---|
-| Все PRD/Specification requirements разбиты на задачи | Drafted |
-| Зависимости и критический путь определены | Drafted |
-| Стратегия тестирования определена | Drafted |
-| Правила GitHub и Definition of Done определены | Drafted |
-| Платные API отделены от обычного CI | Drafted |
-| Безопасность фото/секретов учтена | Drafted |
-| Пилот и release criteria определены | Drafted |
-| Открытые ресурсы для реализации перечислены | Drafted |
+| Все PRD/Specification requirements разбиты на задачи | Accepted |
+| Зависимости и критический путь определены | Accepted |
+| Стратегия тестирования определена | Accepted |
+| Правила GitHub и Definition of Done определены | Accepted |
+| Платные API отделены от обычного CI | Accepted |
+| Безопасность фото/секретов учтена | Accepted |
+| Пилот и release criteria определены | Accepted |
+| Открытые ресурсы для реализации перечислены | Accepted |
 
-**Gate 4 status: READY FOR PRODUCT-OWNER REVIEW — NOT YET ACCEPTED.**
+**Gate 4 status: ACCEPTED владельцем продукта 18 ноября 2026.**
 
-После принятия Stage 4 можно начинать **Stage 5 — Implementation**, начиная с PR-01 (bootstrap, CI и безопасная конфигурация).
-
-До принятия этого Implementation Plan продуктовый код не создаётся.
+Stage 4 принят. Можно начинать **Stage 5 — Implementation**, начиная с PR-01 (bootstrap, CI и безопасная конфигурация). Каждая последующая часть остаётся отдельной проверяемой задачей и Pull Request.
