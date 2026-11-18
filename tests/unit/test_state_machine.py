@@ -15,10 +15,15 @@ def test_happy_path_transitions_to_completed() -> None:
     job = make_job()
     machine = JobStateMachine()
     statuses = [
-        JobStatus.VALIDATING_URL, JobStatus.PAGE_OPENED,
-        JobStatus.GALLERY_DISCOVERED, JobStatus.SOURCES_DOWNLOADED,
-        JobStatus.ANALYZING_ASSETS, JobStatus.LEAD_SELECTED,
-        JobStatus.PROCESSING, JobStatus.VALIDATING_OUTPUT, JobStatus.COMPLETED,
+        JobStatus.VALIDATING_URL,
+        JobStatus.PAGE_OPENED,
+        JobStatus.GALLERY_DISCOVERED,
+        JobStatus.SOURCES_DOWNLOADED,
+        JobStatus.ANALYZING_ASSETS,
+        JobStatus.LEAD_SELECTED,
+        JobStatus.PROCESSING,
+        JobStatus.VALIDATING_OUTPUT,
+        JobStatus.COMPLETED,
     ]
     for status in statuses:
         machine.transition(job, status)
