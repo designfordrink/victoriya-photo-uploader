@@ -1,7 +1,7 @@
 # Stage 1 — Product Requirements Document (PRD)
 ## Victoriya Photo Assistant — MVP 1
 
-**Status:** Draft — Gate 1 pending product-owner acceptance  
+**Status:** ACCEPTED — Gate 1 accepted by product owner on 2026-11-18  
 **Version:** 0.1  
 **Date:** 2026-11-18  
 **Discovery:** [Stage 0 — Discovery Report](../discovery/discovery-report.md) — ACCEPTED  
@@ -362,6 +362,6 @@ The following are not fully specified yet. They must be resolved before the deta
 | Success and acceptance criteria are defined | Complete |
 | Open decisions are recorded | Complete |
 
-**Gate 1 status: READY FOR PRODUCT-OWNER REVIEW — NOT YET ACCEPTED.**
+**Gate 1 status: ACCEPTED by product owner on 2026-11-18.**
 
 After the PRD is accepted, proceed to **Stage 2 — TRD**. Do not start technical design or implementation before this gate is accepted.
