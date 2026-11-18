@@ -5,7 +5,7 @@ from __future__ import annotations
 from dataclasses import dataclass
 from pathlib import Path
 
-from victoriya_photo.domain.models import PhotoJob
+from victoriya_photo.domain.models import JobPaths, PhotoJob
 from victoriya_photo.storage.hashing import copy_file_no_overwrite
 from victoriya_photo.storage.paths import PathManager, ProductDirectories
 
@@ -32,13 +32,13 @@ class StorageManager:
             job_id=str(job.job_id),
         )
         root = self.path_manager.root
-        job.paths = {
-            "product_root": directories.product_root.relative_to(root).as_posix(),
-            "source_dir": directories.source_dir.relative_to(directories.product_root).as_posix(),
-            "work_dir": directories.work_dir.relative_to(directories.product_root).as_posix(),
-            "output_dir": directories.output_dir.relative_to(directories.product_root).as_posix(),
-            "report_json": f"reports/{job.job_id}.json",
-        }
+        job.paths = JobPaths(
+            product_root=directories.product_root.relative_to(root).as_posix(),
+            source_dir=directories.source_dir.relative_to(directories.product_root).as_posix(),
+            work_dir=directories.work_dir.relative_to(directories.product_root).as_posix(),
+            output_dir=directories.output_dir.relative_to(directories.product_root).as_posix(),
+            report_json=f"reports/{job.job_id}.json",
+        )
         return PreparedJobStorage(
             directories=directories,
             source_manifest_path=directories.reports_dir / f"{job.job_id}.json",
