@@ -1,7 +1,7 @@
 # Stage 2 — Technical Requirements / Technical Design (TRD)
 ## Victoriya Photo Assistant — MVP 1
 
-**Status:** Draft — Gate 2 pending technical and product-owner acceptance  
+**Status:** ACCEPTED — Gate 2 accepted by product owner on 2026-11-18  
 **Version:** 0.1  
 **Date:** 2026-11-18  
 **Discovery:** [Stage 0 — Discovery Report](../discovery/discovery-report.md) — ACCEPTED  
@@ -750,7 +750,7 @@ Every output is checked by both automated file validation and human visual revie
 
 **Reason:** exact dimensions, file sizes, hashes, no-overwrite behavior and testability should not depend on an LLM's free-form behavior.
 
-**Status:** proposed.
+**Status:** accepted as the MVP design direction; validate during implementation.
 
 ### ADR-003 — Local MCP over stdio
 
@@ -758,7 +758,7 @@ Every output is checked by both automated file validation and human visual revie
 
 **Reason:** Hermes documents support for local MCP server processes. No public network port is needed, and the tools can be narrowly scoped.
 
-**Status:** proposed.
+**Status:** accepted as the MVP design direction; validate during implementation.
 
 ### ADR-004 — Playwright-managed Chromium for production extraction
 
@@ -766,7 +766,7 @@ Every output is checked by both automated file validation and human visual revie
 
 **Reason:** controlled, repeatable browser execution is easier to validate than relying only on agent-driven browsing.
 
-**Status:** proposed.
+**Status:** accepted as the MVP design direction; validate during implementation.
 
 ### ADR-005 — Pillow for deterministic image transformations
 
@@ -774,7 +774,7 @@ Every output is checked by both automated file validation and human visual revie
 
 **Reason:** these operations require exact, testable pixel and byte-level results.
 
-**Status:** proposed.
+**Status:** accepted as the MVP design direction; validate during implementation.
 
 ### ADR-006 — Separate outpainting and watermark-removal pipelines
 
@@ -784,7 +784,7 @@ Every output is checked by both automated file validation and human visual revie
 
 **Commercial licensing note:** FLUX Fill [dev] is excluded from the production shortlist unless a commercial license is obtained, because its published license is non-commercial and non-production.
 
-**Status:** proposed; requires image-set benchmark and product-owner acceptance.
+**Status:** accepted as the MVP design direction; performance and quality validation remain part of implementation QA.
 
 ## 13. Open technical decisions
 
@@ -824,15 +824,15 @@ Every output is checked by both automated file validation and human visual revie
 
 | Gate 2 condition | Status |
 |---|---|
-| Proposed architecture covers the PRD | Drafted |
-| Main components and their responsibilities are defined | Drafted |
-| Data and tool interfaces are described | Drafted |
-| Browser, image and filesystem integrations are identified | Drafted |
-| Security and file permissions are considered | Drafted |
-| Error handling and logging are described | Drafted |
-| Testing strategy covers PRD requirements | Drafted |
-| Critical technical uncertainties are recorded | Open: hardware, local/cloud policy, model selection |
+| Proposed architecture covers the PRD | Accepted |
+| Main components and their responsibilities are defined | Accepted |
+| Data and tool interfaces are described | Accepted |
+| Browser, image and filesystem integrations are identified | Accepted |
+| Security and file permissions are considered | Accepted |
+| Error handling and logging are described | Accepted |
+| Testing strategy covers PRD requirements | Accepted |
+| Critical technical uncertainties are recorded and assigned to the next specification stage | Accepted: remaining settings and quality thresholds are tracked as detailed-specification / pilot decisions |
 
-**Gate 2 status: READY FOR TECHNICAL REVIEW — NOT YET ACCEPTED.**
+**Gate 2 status: ACCEPTED by product owner on 2026-11-18.**
 
-After the technical design is accepted, proceed to **Stage 3 — Detailed Specification**. Do not implement the photo engine before Gate 2 and the following specification gate are accepted.
+The core architecture and processing approach are accepted. Remaining configuration items in Section 13 (computer path, final secondary-image format, naming convention, download limits and calibrated Jev thresholds) are implementation-level decisions to be resolved in **Stage 3 — Detailed Specification**. They do not reopen the accepted architecture unless the specification reveals a conflict with the PRD.
