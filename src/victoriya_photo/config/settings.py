@@ -62,9 +62,7 @@ class AppConfig(StrictModel):
     collection: str = "wedding"
     photo: PhotoConfig = Field(default_factory=PhotoConfig)
     models: ModelsConfig = Field(default_factory=ModelsConfig)
-    cloud_processing: CloudProcessingConfig = Field(
-        default_factory=CloudProcessingConfig
-    )
+    cloud_processing: CloudProcessingConfig = Field(default_factory=CloudProcessingConfig)
 
 
 def load_config(config_path: Path | str | None = None) -> AppConfig:
