@@ -3,7 +3,10 @@ from dataclasses import dataclass
 import pytest
 
 from victoriya_photo.storage.hashing import (
-    FileCollisionError, copy_file_no_overwrite, sha256_file, unique_by_sha256,
+    FileCollisionError,
+    copy_file_no_overwrite,
+    sha256_file,
+    unique_by_sha256,
 )
 
 
