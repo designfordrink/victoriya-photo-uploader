@@ -43,14 +43,15 @@ class JobStateMachine:
         current = job.status
         allowed = set(_ALLOWED_TRANSITIONS[current])
         if target == JobStatus.FAILED and current not in {
-            JobStatus.COMPLETED, JobStatus.PARTIAL, JobStatus.NEEDS_REVIEW, JobStatus.FAILED,
+            JobStatus.COMPLETED,
+            JobStatus.PARTIAL,
+            JobStatus.NEEDS_REVIEW,
+            JobStatus.FAILED,
         }:
             allowed.add(JobStatus.FAILED)
 
         if target not in allowed:
-            raise InvalidStateTransition(
-                f"Cannot move job from {current.value} to {target.value}"
-            )
+            raise InvalidStateTransition(f"Cannot move job from {current.value} to {target.value}")
 
         timestamp = occurred_at or utc_now()
         job.status = target
