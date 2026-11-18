@@ -2,7 +2,9 @@ import pytest
 
 from victoriya_photo.domain.models import PhotoJob, ProductIdentity
 from victoriya_photo.jobs.repository import (
-    JobAlreadyExistsError, JobNotFoundError, JobRepository,
+    JobAlreadyExistsError,
+    JobNotFoundError,
+    JobRepository,
 )
 from victoriya_photo.storage.paths import PathManager
 
