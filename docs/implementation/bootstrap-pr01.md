@@ -11,6 +11,8 @@
 git clone https://github.com/designfordrink/victoriya-photo-uploader.git
 cd victoriya-photo-uploader
 uv sync --all-groups
+# If uv.lock was not present, uv creates it during the first sync.
+uv lock
 Copy-Item config/config.example.yaml config/config.yaml
 ```
 
@@ -22,6 +24,15 @@ paths:
 ```
 
 Либо используй переменную среды `VICTORIYA_ROOT` как переопределение. Файл `config/config.yaml` не добавляется в Git.
+
+Если `uv.lock` был создан впервые, добавь его в репозиторий вместе с изменениями зависимостей:
+
+```powershell
+git add uv.lock
+git commit -m "chore: add uv dependency lock"
+```
+
+В CI lock-файл создаётся и сохраняется как артефакт, чтобы установка проверялась на Windows и Ubuntu.
 
 ## Проверка установки
 
