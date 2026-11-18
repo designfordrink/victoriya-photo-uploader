@@ -18,6 +18,7 @@ def utc_now() -> datetime:
 
 class StrictModel(BaseModel):
     """Base model that rejects unknown data and validates assignments."""
+
     model_config = ConfigDict(extra="forbid", validate_assignment=True, str_strip_whitespace=True)
 
 
@@ -54,6 +55,7 @@ class ProductIdentity(StrictModel):
 
 class JobPaths(StrictModel):
     """Paths stored in a manifest are relative to their documented root."""
+
     product_root: str
     source_dir: str
     work_dir: str
@@ -120,6 +122,7 @@ class AssetSelection(StrictModel):
 
 class ProcessingResult(StrictModel):
     """Processing decisions and providers used for one asset."""
+
     method: str | None = None
     outpaint_provider: str | None = None
     erase_provider: str | None = None
